@@ -22,6 +22,8 @@ int bm_check(FILE * );
 void bm_resolution(FILE * , int * , int * );
 int bm_pix_format(FILE * );
 int bm_pix_offset(FILE * );
+int bm_size(FILE *);
+int bm_pix_data_size(FILE *);
 void bm_data_storage(FILE *, int);
 int greyscale_check(FILE *);
 

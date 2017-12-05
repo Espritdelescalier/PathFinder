@@ -5,7 +5,7 @@
 
 int main(){
     char file_name[50];
-    int bitmap, reso_vert, reso_hor, pix_format, pix_offset;
+    int bitmap, reso_vert, reso_hor, pix_format, pix_offset, image_size, data_size;
     int data, i;
     height_mat hm;
     FILE *fp;
@@ -44,6 +44,12 @@ int main(){
     pix_offset = bm_pix_offset(fp);
     printf("\nDonnées pixels après le %dème octet\n",pix_offset);
 
+    image_size = bm_size(fp);
+    printf("L'image pèse %d octets\n", image_size);
+
+    data_size = bm_pix_data_size(fp);
+    printf("Les données pixel padding inclus pèsent %d octets\n", data_size);
+
     hm = consvide();
     fseek(fp, pix_offset, SEEK_SET);
     for(i=0; i<= 300; i=i+3){
@@ -55,12 +61,6 @@ int main(){
     printf("\t\t\t\n%d\n",tete(hm));
     liberer(hm);
 
-    if(greyscale_check(fp)==1){
-        printf("\nL'image est bien greyscale\n");
-    }
-    else{
-        printf("\nL'image n'est pas greyscale\n");
-    }
 
     fclose(fp);
     return 1;

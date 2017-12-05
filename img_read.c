@@ -103,11 +103,10 @@ void bm_resolution(FILE * file, int * vert, int * horizon){
 }
 
 int bm_pix_format(FILE * file){
-    int a,b;
+    int a;
     fseek(file,28,SEEK_SET);
     a = fgetc(file);
-    b = a*pow(16,0);
-    return b;
+    return a;
 }
 
 int bm_pix_offset(FILE * file){
@@ -117,6 +116,71 @@ int bm_pix_offset(FILE * file){
     return a*pow(16,0);
 }
 
+int bm_size(FILE *file){
+    //int octets[8];
+    int data_size = 0;
+    int a, i;
+    /*fseek(file,2,SEEK_SET);
+    for(i=0;i<=7;i=i+2){
+        a = fgetc(file);
+        if(a==0){
+            octets[i] = a;
+            octets[i+1] = a;
+        }
+        else if((a>=1)&&(a<=9)){
+            octets[i] = a;
+            octets[i+1] = 0;
+
+        }
+        else{
+            octets[i] = a;
+        }
+    }
+    for(i=0;i<=7;i++){
+        data_size = data_size+octets[i]*pow(16,i);
+    }*/
+    fseek(file, 1, SEEK_SET);
+    data_size=1;
+    while(fgetc(file)!=EOF){
+        data_size++;
+    }
+
+    return data_size;
+}
+
+int bm_pix_data_size(FILE *file){
+    //int octets[8];
+    int data_size = 0;
+    int a, b, i;
+    /*fseek(file,34,SEEK_SET);
+    for(i=0;i<=7;i=i+2){
+        a = fgetc(file);
+        if(a==0){
+            octets[i] = a;
+            octets[i+1] = a;
+        }
+        else if((a>=1)&&(a<=9)){
+            octets[i] = a;
+            octets[i+1] = 0;
+        }
+        else{
+            b = a;
+            b= a%16;
+            octets[i+1] = b;
+            b = (a/16)%16;
+            octets[i] = b;
+        }
+    }
+    for(i=0;i<=7;i++){
+        data_size = data_size+octets[i]*pow(16,i);
+    }*/
+    a = bm_size(file);
+    b = bm_pix_offset(file);
+
+    return a-b;
+}
+
+//unfinished
 void bm_data_storage(FILE *file, int pix_offset){
     height_mat pixdata = consvide();
     fseek(file, pix_offset, SEEK_SET);
@@ -125,7 +189,7 @@ void bm_data_storage(FILE *file, int pix_offset){
     }
 }
 
-int greyscale_check(FILE *file){
+/*int greyscale_check(FILE *file){
     int a,b,c,i=1;
 
-}
+}*/

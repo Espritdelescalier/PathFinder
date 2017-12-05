@@ -43,48 +43,4 @@ L'utilisateur devra entrer:
 
 
 
-////////////
-/structures/
-////////////
 
-
-//Liste de réels (pour plus de granularité, selon analyse supplémentaire utilisation potentielle d'entier)
-//représentant les niveaux d'élévation ponctuels
-
-typedef struct list_m{
-    double elev;
-    struct list_m * succ;
-}elem_list_m, * matr_data;
-
-
-//Matrice (liste de listes) pour recueillir les valeurs d'élévation de l'image (copie de plus basse résolution)
-//après convertion des valeurs (RGB ou greyscale) des pixels en élévation
-
-typedef struct matr_col{
-    matr_data d;
-    struct matr_col * next_c;
-}elem_matrix, * img_matrix;
-
-
-
-//Liste de point de la matrice traversés en route vers le point d'arrivée. Constituera le chemin a tracer.
-//doublement chaînée en cas de blocage pour un retour en amont plus simple pour changer de direction
-//deux entiers potentiellement réunit en une struture point
-
-typedef struct list_px{
-    int x,y;
-    struct list_px * prev_px;
-    struct list_px * next_px;
-}elem_list_px, * list_path;
-
-
-//Structure vecteur m_vect
-//coordonnées de la tete du vecteur head (head étant une struct pos_grid avec deux entiers x et y)
-//coordonnées de la queue du vecteur tail (tail étant une struct pos_grid avec deux entiers x et y)
-//Possibilité d'en faire une structure dynamique
-//le déplacement entre les deux points sera vraisemblablement (sauf changement dramatique dans l'analyse du problème)
-//basé sur le vecteur lié au couple du véhicule et les vecteurs liés au changement d'élévation.
-
-typedef struct{
-    pos_grid head, tail;
-}m_vect;
