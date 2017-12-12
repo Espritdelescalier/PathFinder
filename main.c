@@ -4,16 +4,19 @@
 #include "img_read.h"
 
 int main(){
-    char file_name[50];
+    char file_name[100];
     int bitmap, reso_vert, reso_hor, pix_format, pix_offset, image_size, data_size;
     int data, i;
     height_mat hm;
     FILE *fp;
 
-    printf("Entrez le nom du fichier\t");
+    printf("Glisser le fichier dans le terminal\t");
     scanf("%s", file_name);
     //strcat(file_name,".bmp");
     printf("%s\n",file_name);
+
+    i = strlen(file_name);
+    printf("%d\n",i);
 
     fp=fopen(file_name,"rb");
     if (fp == NULL){
@@ -47,21 +50,28 @@ int main(){
     image_size = bm_size(fp);
     printf("L'image pèse %d octets\n", image_size);
 
-    data_size = bm_pix_data_size(fp);
+    data_size = image_size-pix_offset;
     printf("Les données pixel padding inclus pèsent %d octets\n", data_size);
 
     hm = consvide();
     fseek(fp, pix_offset, SEEK_SET);
-    for(i=0; i<= 300; i=i+3){
+    for(i=0; i<= 2500; i=i+3){
         data = fgetc(fp);
         hm = add_height_val(hm, data);
     }
 
-    lire(hm);
-    printf("\t\t\t\n%d\n",tete(hm));
+    //lire(hm);
+    printf("tete de la liste %d",tete(hm));
+
+    if(bm_greyscale_check(fp) == 1){
+        printf("\nGreyscale\n");
+    }
+    else{
+        printf("\nCouleur\n");
+        bm_greyscale_conversion(fp);
+    }
+
     liberer(hm);
-
-
     fclose(fp);
-    return 1;
+    return 0;
 }
