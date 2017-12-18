@@ -15,4 +15,4 @@ obj/%.o : %.c
 	$(CC) $(OPT) -o $@ -c $<
 
 clean:
-	rm *- *.o $(EXE) $(OBJ)
+	@rm -f *- *.o $(EXE) $(OBJ)

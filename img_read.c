@@ -172,7 +172,8 @@ int bm_access_data(height_mat matrix, int col, int line,  int reso){
 
 void bm_greyscale_conversion(FILE *file){
     FILE *bwclone;
-    int offset, siz, i, j, a, b, c, grey;
+    int offset, siz, i, j;
+    short a, b, c, grey;
     bwclone = fopen("greyscale_copy.bmp", "wb");
     offset = bm_pix_offset(file);
     siz = bm_size(file)-offset;
@@ -184,7 +185,21 @@ void bm_greyscale_conversion(FILE *file){
         a = fgetc(file);
         b = fgetc(file);
         c = fgetc(file);
-        grey =(((a*0.2)+(1*b)+(1*c))/3);
+        if (((a==255)&&(b==255))&&(c==255)){
+            grey = 255;
+        }
+        else if((a <= 255)&&(a >= 5)&&(c <= 255)&&(c >= 5)){
+            grey = 255- ((255-b)/3);
+        }
+        else if((c == 255)&&(a == 0)){
+            grey = (255 - (255/3)) - (b/3);
+        }
+        else if((b == 255)&&(a == 0)){
+            grey = (255/3) - ((255-c)/3);
+        }
+        else {
+            grey = 0;
+        }
         for(j = 1; j <= 3; j++){
             putc(grey, bwclone);
         }
