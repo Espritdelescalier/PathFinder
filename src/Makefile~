@@ -1,0 +1,23 @@
+CC=gcc
+SDLFLAGS=$(shell sdl2-config --cflags --libs) -lSDL2_image -lSDL2_ttf
+LDFLAGS=-lm
+OBJ=../obj
+EXE=../bin/PathFinder
+OPT=-Wall -std=c99 -g
+
+all: $(OBJ) binary
+
+binary: $(OBJ)/img_read.o $(OBJ)/main.o
+	$(CC) $(OPT) -o $(EXE) $< $(LDFLAGS) $(SDLFLAGS) 
+
+$(OBJ)/img_read.o: img_read.c img_read.h
+	$(CC) $(OPT) -o $@ -c $< $(SDLFLAGS) $(LDFLAGS)
+
+$(OBJ)/%.o : %.c
+	$(CC) $(OPT) -o $@ -c $< $(SDLFLAGS) $(LDFLAGS)
+
+$(OBJ):
+	@mkdir $@
+
+clean:
+	@rm -rf *- *.o $(EXE) $(OBJ)   
