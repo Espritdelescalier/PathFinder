@@ -101,6 +101,7 @@ int bm_pix_format(FILE * file){
     int a;
     fseek(file,28,SEEK_SET);
     a = fgetc(file);
+    rewind(file);
     return a;
 }
 
@@ -108,6 +109,7 @@ int bm_pix_offset(FILE * file){
     int a;
     fseek(file, 10, SEEK_SET);
     a = fgetc(file);
+    rewind(file);
     return a*pow(16,0);
 }
 
@@ -115,6 +117,7 @@ int bm_size(FILE *file){
     int data_size = 0;
     fseek(file, EOF, SEEK_END);
     data_size = ftell(file) + 1;
+    rewind(file);
     return data_size;
 }
 
@@ -128,7 +131,7 @@ void bm_data_storage(FILE *file, int pix_offset){
     }
 }
 
-int bm_greyscale_check(FILE *file){
+int bm_grayscale_check(FILE *file){
     int i, a, b, c, diag, med, h_reso, v_reso;
     bm_resolution(file, &v_reso, &h_reso);
     for(i = 1; i<=v_reso; i=i+2){
@@ -153,6 +156,7 @@ int bm_greyscale_check(FILE *file){
         else
             med = 0;
     }
+    rewind(file);
     return ((diag==1)&&(med==1));
 }
 
@@ -173,14 +177,13 @@ int bm_access_data(height_mat matrix, int col, int line,  int reso){
         return EXIT_FAILURE;
 }
 
-void bm_greyscale_conversion(FILE *file){
+void bm_grayscale_conversion(FILE *file){
     FILE *bwclone;
     int offset, siz, i, j;
     short a, b, c, grey;
-    bwclone = fopen("greyscale_copy.bmp", "wb");
+    bwclone = fopen("grayscale_copy.bmp", "wb");
     offset = bm_pix_offset(file);
     siz = bm_size(file)-offset;
-    rewind(file);
     for(i = 1; i <= offset; i++){
         putc(fgetc(file),bwclone);
     }
@@ -207,14 +210,16 @@ void bm_greyscale_conversion(FILE *file){
             putc(grey, bwclone);
         }
     }
+    rewind(file);
     fclose(bwclone);
 }
 
 void gaussian_blur(FILE * file){
     FILE *blur_clone;
-    int offset, i, j=0, k, reso_h, reso_v, grey;
-    double gauss_kernel[3] = {0.06136, 0.24477, 0.38774};
-    unsigned char pmintwo, pminone, p, pplusone, pplustwo, a, b, c, d, e;
+    int offset, i, j=0, reso_h, reso_v, grey;
+    double gauss_kernel[3] = {0.153388, 0.221461, 0.250301};
+    double po, pt, pp, ppo, ppt;
+    unsigned char pmintwo, pminone, p, pplusone, pplustwo;
     unsigned char * buffer;
     unsigned char * header;
     long siz;
@@ -227,9 +232,6 @@ void gaussian_blur(FILE * file){
     header = (unsigned char *)malloc (sizeof(unsigned char)*offset);
     rewind(file);
     fread(header, 1, offset, file);
-    for(i=0; i<=offset; i++){
-        //printf("%d\n",header[i]);
-    }
     bm_resolution(file, &reso_v, &reso_h);
     fwrite(header, offset, 1, blur_clone);
     for(i=offset; i<siz; i=i+3){
@@ -238,18 +240,25 @@ void gaussian_blur(FILE * file){
         j++;
     }
     pmintwo = buffer[0];
-    pminone = buffer[500];
-    p = buffer[2000];
-    pplusone = buffer[3000];
-    pplustwo = buffer[8000000];
-    printf("%d\n",pplustwo);
-
-    /*if((pminone == pmintwo)&&(pminone == p)&&(p == pplusone)&&(pplusone == pplustwo)){
-
+    pminone = buffer[1];
+    p = buffer[2];
+    pplusone = buffer[3];
+    pplustwo = buffer[4];
+    for(i=0; i < ((siz-offset)/3)-2; i++){
+        pt = (pmintwo*gauss_kernel[0]);
+        po = (pminone*gauss_kernel[1]);
+        pp = (p*gauss_kernel[2]);
+        ppo = (pplusone*gauss_kernel[1]);
+        ppt = (pplustwo*gauss_kernel[0]);
+        grey = (unsigned char)(pt+po+pp+ppo+ppt);
+        for(j=1; j<=3; j++)
+            putc(grey, blur_clone);
+        pmintwo = pminone;
+        pminone = p;
+        p = pplusone;
+        pplusone = pplustwo;
+        pplustwo = buffer[i+5];
     }
-    else{
-        putc(getc(file), blur_clone);
-    }*/
     free(header);
     free(buffer);
     fclose(blur_clone);

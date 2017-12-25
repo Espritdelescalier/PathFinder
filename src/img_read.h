@@ -25,9 +25,9 @@ int bm_pix_format(FILE * );//return number of bits that code a pixel
 int bm_pix_offset(FILE * );//return bytes after which pixel data begins
 int bm_size(FILE *);//return the size of the image in bytes
 void bm_data_storage(FILE *, int);
-int bm_greyscale_check(FILE *);
+int bm_grayscale_check(FILE *);
 int bm_access_data(height_mat , int, int, int);
-void bm_greyscale_conversion(FILE *);
+void bm_grayscale_conversion(FILE *);
 void gaussian_blur(FILE *);
 
 
