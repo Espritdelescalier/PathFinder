@@ -68,14 +68,14 @@ int main(int argc, char **argv){
         //lire(hm);
         //printf("tete de la liste %d",tete(hm));
 
-        if(bm_greyscale_check(fp) == 1){
+        if(bm_grayscale_check(fp) == 1){
             printf("\nGrayscale\n");
         }
         else{
             printf("\nCouleur\n");
-            bm_greyscale_conversion(fp);
+            bm_grayscale_conversion(fp, file_name);
         }
-        gauss_blur=fopen("grayscale_copy.bmp","rb");
+        gauss_blur=fopen("grayscale.bmp","rb");
         gaussian_blur(gauss_blur);
         //liberer(hm);
 
