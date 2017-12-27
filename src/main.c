@@ -18,12 +18,10 @@ int main(int argc, char **argv){
     char file_name[100];
     int bitmap, reso_vert, reso_hor, pix_format, pix_offset, image_size, data_size;
     int data, i;
-    //height_mat hm;
     FILE *fp, *gauss_blur;
 
     printf("Glisser le fichier dans le terminal\t");
     scanf("%s", file_name);
-    //strcat(file_name,".bmp");
     printf("%s\n",file_name);
 
     i = strlen(file_name);
@@ -58,16 +56,6 @@ int main(int argc, char **argv){
         data_size = image_size-pix_offset;
         printf("Les données pixel padding inclus pèsent %d octets\n", data_size);
 
-        /*hm = consvide();
-        fseek(fp, pix_offset, SEEK_SET);
-        for(i=0; i<= 2500; i=i+3){
-            data = fgetc(fp);
-            hm = add_height_val(hm, data);
-        }*/
-
-        //lire(hm);
-        //printf("tete de la liste %d",tete(hm));
-
         if(bm_grayscale_check(fp) == 1){
             printf("\nGrayscale\n");
         }
@@ -77,9 +65,8 @@ int main(int argc, char **argv){
         }
         gauss_blur=fopen("grayscale.bmp","rb");
         gaussian_blur(gauss_blur);
-        //liberer(hm);
 
-        if(SDL_Init(SDL_INIT_VIDEO) != 0){
+        /*if(SDL_Init(SDL_INIT_VIDEO) != 0){
         fprintf(stdout, "ecjec init sdl %s\n", SDL_GetError());
         return EXIT_FAILURE;
         }
@@ -102,7 +89,7 @@ int main(int argc, char **argv){
                     continuer = 0;
                     break;
             }
-        }
+        }*/
         fclose(gauss_blur);
         fclose(fp);
     }

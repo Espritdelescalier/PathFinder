@@ -238,7 +238,7 @@ void bm_grayscale_conversion(FILE *file, char *name){
 
 void gaussian_blur(FILE * file){
     FILE *blur_clone;
-    int offset, i, j=0, reso_h, reso_v, grey;
+    int offset, i, j=0, k, reso_h, reso_v, grey;
     double gauss_kernel[3] = {0.153388, 0.221461, 0.250301};
     double po, pt, pp, ppo, ppt;
     unsigned char pmintwo, pminone, p, pplusone, pplustwo;
@@ -250,17 +250,17 @@ void gaussian_blur(FILE * file){
     blur_clone = fopen("gaussian_copy.bmp", "wb");
     siz = bm_size(file);
     offset = bm_pix_offset(file);
-
-    original_and_vert_pass = (unsigned char *)malloc (sizeof(unsigned char)*(siz-offset)/3);
-    hor_pass = (unsigned char *)malloc (sizeof(unsigned char)*(siz-offset)/3);
-    header = (unsigned char *)malloc (sizeof(unsigned char)*offset);
     bm_resolution(file, &reso_v, &reso_h);
+
+    original_and_vert_pass = (unsigned char *)malloc (sizeof(unsigned char)*(reso_h*reso_v));
+    hor_pass = (unsigned char *)malloc (sizeof(unsigned char)*(reso_h*reso_v));
+    header = (unsigned char *)malloc (sizeof(unsigned char)*offset);
     rewind(file);
+
     //copy and write header from original file in the new one
     fread(header, 1, offset, file);
     fwrite(header, offset, 1, blur_clone);
     free(header);
-
     //fill the first unsigned char array with pixels value to compute the horizontal pass
     //of the gaussian blur
     for(i=offset; i<siz; i=i+3){
@@ -276,29 +276,60 @@ void gaussian_blur(FILE * file){
     p = original_and_vert_pass[2];
     pplusone = original_and_vert_pass[3];
     pplustwo = original_and_vert_pass[4];
-    for(i=0; i < ((siz-offset)/3)-2; i++){
+    hor_pass[0] = pmintwo;
+    hor_pass[1] = pminone;
+    for(i=2; i < (reso_h*reso_v)-2; i++){
         pt = (pmintwo*gauss_kernel[0]);
         po = (pminone*gauss_kernel[1]);
         pp = (p*gauss_kernel[2]);
         ppo = (pplusone*gauss_kernel[1]);
         ppt = (pplustwo*gauss_kernel[0]);
         grey = (unsigned char)(pt+po+pp+ppo+ppt);
-        hor_pass[i+3] = grey;
-        /*for(j=1; j<=3; j++)
-            putc(grey, blur_clone);*/
+        hor_pass[i] = grey;
+        //for(j=1; j<=3; j++)
+        //    putc(grey, blur_clone);
         pmintwo = pminone;
         pminone = p;
         p = pplusone;
         pplusone = pplustwo;
-        pplustwo = original_and_vert_pass[i+5];
+        pplustwo = original_and_vert_pass[i+3];
     }
+    hor_pass[(reso_h*reso_v)-2] = original_and_vert_pass[(reso_h*reso_v)-2];
+    hor_pass[(reso_h*reso_v)-1] = original_and_vert_pass[(reso_h*reso_v)-1];
+
 
     //refill the first unsigned char array with the result of the calculations of the vertical_pass
     // of the gaussian blur
 
+    for(i = 0; i < 2*reso_h; i++){
+        original_and_vert_pass[i] = hor_pass[i];
+    }
+    for(i = 0; i < reso_h; i++){
+        for(j = 2; j< reso_v-2; j++){
+            pmintwo = hor_pass[((j-2)*reso_h)+i];
+            pminone = hor_pass[((j-1)*reso_h)+i];
+            p = hor_pass[(j*reso_h)+i];
+            pplusone = hor_pass[((j+1)*reso_h)+i];
+            pplustwo = hor_pass[((j+2)*reso_h)+i];
 
-
-
+            pt = (pmintwo*gauss_kernel[0]);
+            po = (pminone*gauss_kernel[1]);
+            pp = (p*gauss_kernel[2]);
+            ppo = (pplusone*gauss_kernel[1]);
+            ppt = (pplustwo*gauss_kernel[0]);
+            grey = (unsigned char)(pt+po+pp+ppo+ppt);
+            original_and_vert_pass[(j*reso_h)+i] = grey;
+        }
+    }
+    for(i = ((reso_h*reso_v)-1)-(2*reso_h); i < reso_h*reso_v; i++){
+        original_and_vert_pass[i] = hor_pass[i];
+    }
+    for(k=0;k < (reso_h*reso_v); k++){
+        for(j=0; j<3; j++){
+            putc(original_and_vert_pass[k], blur_clone);
+        }
+    }
+    free(hor_pass);
     free(original_and_vert_pass);
     fclose(blur_clone);
 }
