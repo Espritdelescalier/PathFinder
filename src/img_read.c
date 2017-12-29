@@ -245,9 +245,9 @@ void gaussian_blur(FILE * file){
     unsigned char * original_and_vert_pass;
     unsigned char * hor_pass;
     unsigned char * header;
-    long siz;
-    //size_t result;
-    blur_clone = fopen("gaussian_copy.bmp", "wb");
+    int siz;
+
+    blur_clone = fopen("gaussian.bmp", "wb");
     siz = bm_size(file);
     offset = bm_pix_offset(file);
     bm_resolution(file, &reso_v, &reso_h);
@@ -261,7 +261,7 @@ void gaussian_blur(FILE * file){
     fread(header, 1, offset, file);
     fwrite(header, offset, 1, blur_clone);
     free(header);
-    //fill the first unsigned char array with pixels value to compute the horizontal pass
+    //fill the first unsigned char buffer with pixels value to compute the horizontal pass
     //of the gaussian blur
     for(i=offset; i<siz; i=i+3){
         fseek(file, i+1, SEEK_SET);
@@ -269,7 +269,7 @@ void gaussian_blur(FILE * file){
         j++;
     }
 
-    //fill the second unsigned array with the result of the calculations of the horizontal pass
+    //fill the second unsigned char buffer with the result of the calculations of the horizontal pass
     //of the gaussian blur
     pmintwo = original_and_vert_pass[0];
     pminone = original_and_vert_pass[1];
@@ -298,7 +298,7 @@ void gaussian_blur(FILE * file){
     hor_pass[(reso_h*reso_v)-1] = original_and_vert_pass[(reso_h*reso_v)-1];
 
 
-    //refill the first unsigned char array with the result of the calculations of the vertical_pass
+    //refill the first unsigned char buffer with the result of the calculations of the vertical_pass
     // of the gaussian blur
 
     for(i = 0; i < 2*reso_h; i++){
@@ -332,4 +332,101 @@ void gaussian_blur(FILE * file){
     free(hor_pass);
     free(original_and_vert_pass);
     fclose(blur_clone);
+}
+
+void sobel_filter(FILE * file){
+    FILE *sobel;
+    int offset, i, j=0, k, reso_h, reso_v, pixel;
+    short sobel_kernel[3][3] = {{1, 2, 1},{0, 0, 0},{-1, -2, -1}};
+    unsigned char pixel_matrix[3][3] = {{0, 0, 0},{0, 0, 0},{0, 0, 0}};
+    unsigned char * original;
+    unsigned char * filter_pass;
+    unsigned char * header;
+    int siz, gx, gy;
+
+    sobel = fopen("gradient.bmp", "wb");
+    siz = bm_size(file);
+    offset = bm_pix_offset(file);
+    bm_resolution(file, &reso_v, &reso_h);
+
+    original = (unsigned char *)malloc (sizeof(unsigned char)*(reso_h*reso_v));
+    filter_pass = (unsigned char *)malloc (sizeof(unsigned char)*(reso_h*reso_v));
+    header = (unsigned char *)malloc (sizeof(unsigned char)*offset);
+    rewind(file);
+
+    //copy and write header from original file in the new one
+    fread(header, 1, offset, file);
+    fwrite(header, offset, 1, sobel);
+    free(header);
+
+    //fill the first unsigned char buffer with pixels value to compute the horizontal pass
+    //of the gaussian blur
+    for(i=offset; i<siz; i=i+3){
+        fseek(file, i+1, SEEK_SET);
+        original[j] = getc(file);
+        j++;
+    }
+
+    //fill the first line of the file in white so it's impossible to leave the image
+    for(i = 0; i<reso_h; i++){
+        filter_pass[i] = 255;
+    }
+    //fill the last line of the file in white so it's impossible to leave the image
+    for(i = ((reso_h*reso_v)-1)-reso_h; i<reso_h*reso_v; i++){
+        filter_pass[i] = 255;
+    }
+    //fill the first and last row of the file in white
+    for(i = 0; i < reso_h; i = i+reso_h){
+        for(j = 0; j < reso_v; j++){
+            filter_pass[(j*reso_h)+i] = 255;
+        }
+    }
+
+    pixel_matrix[0][0] = original[0];
+    pixel_matrix[1][0] = original[1];
+    pixel_matrix[2][0] = original[2];
+    pixel_matrix[0][1] = original[reso_h];
+    pixel_matrix[1][1] = original[reso_h+1];
+    pixel_matrix[2][1] = original[reso_h+2];
+    pixel_matrix[0][2] = original[(2*reso_h)];
+    pixel_matrix[1][2] = original[(2*reso_h)+1];
+    pixel_matrix[2][2] = original[(2*reso_h)+2];
+    for(i = 1; i < reso_v-1; i++){
+        for(j = 1; j < reso_h-1; j++){
+            gy = (pixel_matrix[2][0]*sobel_kernel[0][0])+(pixel_matrix[2][1]*sobel_kernel[1][0])+(pixel_matrix[2][2]*sobel_kernel[2][0])
+                    +(pixel_matrix[1][0]*sobel_kernel[0][1])+(pixel_matrix[1][1]*sobel_kernel[1][1])+(pixel_matrix[1][2]*sobel_kernel[2][1])
+                        +(pixel_matrix[0][0]*sobel_kernel[0][2]) + (pixel_matrix[0][1]*sobel_kernel[1][2])+(pixel_matrix[0][2]*sobel_kernel[2][2]);
+            gx = (pixel_matrix[2][0]*sobel_kernel[2][0])+(pixel_matrix[2][1]*sobel_kernel[2][1])+pixel_matrix[2][2]*sobel_kernel[2][2]
+                    +(pixel_matrix[1][0]*sobel_kernel[1][0])+(pixel_matrix[1][1]*sobel_kernel[1][1])+(pixel_matrix[1][2]*sobel_kernel[1][2])
+                        +(pixel_matrix[0][0]*sobel_kernel[0][0])+(pixel_matrix[0][1]*sobel_kernel[0][1])+(pixel_matrix[0][2]*sobel_kernel[0][2]);
+            pixel = sqrt(pow(gx,2)+pow(gy,2));
+            filter_pass[(i*reso_h)+j] = (unsigned char)pixel;
+            pixel_matrix[0][0] = pixel_matrix[1][0];
+            pixel_matrix[1][0] = pixel_matrix[2][0];
+            pixel_matrix[2][0] = original[(((i-1)*reso_h)+(j+2))];
+            pixel_matrix[0][1] = pixel_matrix[1][1];
+            pixel_matrix[1][1] = pixel_matrix[2][1];
+            pixel_matrix[2][1] = original[((i*reso_h)+(j+2))];
+            pixel_matrix[0][2] = pixel_matrix[1][2];
+            pixel_matrix[1][2] = pixel_matrix[2][2];
+            pixel_matrix[2][2] = original[(((i+1)*reso_h)+(j+2))];
+        }
+        pixel_matrix[0][0] = original[(i)*reso_h];
+        pixel_matrix[1][0] = original[((i)*reso_h)+1];
+        pixel_matrix[2][0] = original[((i)*reso_h)+2];
+        pixel_matrix[0][1] = original[(i+1)*reso_h];
+        pixel_matrix[1][1] = original[((i+1)*reso_h)+1];
+        pixel_matrix[2][1] = original[((i+1)*reso_h)+2];
+        pixel_matrix[0][2] = original[((i+2)*reso_h)];
+        pixel_matrix[1][2] = original[((i+2)*reso_h)+1];
+        pixel_matrix[2][2] = original[((i+2)*reso_h)+2];
+    }
+
+    for(i = 0; i < reso_h*reso_v; i++){
+        for(j=0; j<3; j++){
+            putc(filter_pass[i], sobel);
+        }
+    }
+    free(original);
+    free(filter_pass);
 }

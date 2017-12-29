@@ -18,7 +18,7 @@ int main(int argc, char **argv){
     char file_name[100];
     int bitmap, reso_vert, reso_hor, pix_format, pix_offset, image_size, data_size;
     int data, i;
-    FILE *fp, *gauss_blur;
+    FILE *fp, *gauss_blur, *sobel;
 
     printf("Glisser le fichier dans le terminal\t");
     scanf("%s", file_name);
@@ -65,6 +65,8 @@ int main(int argc, char **argv){
         }
         gauss_blur=fopen("grayscale.bmp","rb");
         gaussian_blur(gauss_blur);
+        sobel = fopen("gaussian.bmp", "rb");
+        sobel_filter(sobel);
 
         /*if(SDL_Init(SDL_INIT_VIDEO) != 0){
         fprintf(stdout, "ecjec init sdl %s\n", SDL_GetError());
@@ -90,6 +92,7 @@ int main(int argc, char **argv){
                     break;
             }
         }*/
+        fclose(sobel);
         fclose(gauss_blur);
         fclose(fp);
     }

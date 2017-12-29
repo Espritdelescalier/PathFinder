@@ -29,6 +29,7 @@ int bm_grayscale_check(FILE *);
 int bm_access_data(height_mat , int, int, int);
 void bm_grayscale_conversion(FILE *, char*);
 void gaussian_blur(FILE *);
+void sobel_filter(FILE * file);
 
 
 #endif
