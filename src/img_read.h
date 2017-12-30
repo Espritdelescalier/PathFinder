@@ -27,8 +27,9 @@ int bm_size(FILE *);//return the size of the image in bytes
 void bm_data_storage(FILE *, int);
 int bm_grayscale_check(FILE *);
 int bm_access_data(height_mat , int, int, int);
-void bm_grayscale_conversion(FILE *, char*);
+void bm_grayscale_conversion(FILE *);
 void gaussian_blur(FILE *);
+void angle_to_rgb(double, unsigned char*, unsigned char*, unsigned char*, unsigned char);
 void sobel_filter(FILE * file);
 
 

@@ -61,7 +61,7 @@ int main(int argc, char **argv){
         }
         else{
             printf("\nCouleur\n");
-            bm_grayscale_conversion(fp, file_name);
+            bm_grayscale_conversion(fp);
         }
         gauss_blur=fopen("grayscale.bmp","rb");
         gaussian_blur(gauss_blur);
