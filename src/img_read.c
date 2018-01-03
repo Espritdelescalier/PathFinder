@@ -1,7 +1,7 @@
 #include"img_read.h"
 #include <stdint.h>
 
-#define PI 3.14159265;
+#define PI 3.14159265
 
 int IsEmpty(height_mat hm){
     return hm == NULL;
@@ -192,7 +192,7 @@ int bm_access_data(height_mat matrix, int col, int line,  int reso){
 
 //copy the header of "file" in unsigned char array "header" and copy it in a new file unchanged
 //copy the pixel data of "file" in unsigned char array "buffer" and proceed to convert BGR to grayscale
-void bm_grayscale_conversion(FILE *file){
+void bm_grayscale_conversion(FILE *file, char *file_copy){
     FILE *bwclone;
     int offset, siz, i, j;
     unsigned char * buffer;
@@ -200,7 +200,7 @@ void bm_grayscale_conversion(FILE *file){
     unsigned char B, G, R, grey;
     offset = bm_pix_offset(file);
     siz = bm_size(file)-offset;
-    bwclone = fopen("grayscale.bmp", "wb");
+    bwclone = fopen(file_copy, "wb");
     buffer = (unsigned char *)malloc (sizeof(unsigned char)*siz);
     header = (unsigned char *)malloc (sizeof(unsigned char)*offset);
 
@@ -208,7 +208,6 @@ void bm_grayscale_conversion(FILE *file){
     fread(buffer, 1, siz, file);
     fwrite(header, offset, 1, bwclone);
     free(header);
-
     for(i = 0; i < siz-2; i=i+3){
         B = buffer[i];
         G = buffer[i+1];
@@ -217,14 +216,17 @@ void bm_grayscale_conversion(FILE *file){
             //if white keep white
             grey = 255;
         }
-        else if((B <= 255)&&(B >= 5)&&(R < 255)&&(R >= 5)&&((B <= R)||(R<=B))&&((B>=R-50)||(R>B-50))){
-            grey = 255- ((255-G)/3);
+        else if((B<=255)&&(B>=50)&&(R<=255)&&(R>=200)&&(G>=10)){
+            grey = (255-((255-G)/4));
+        }
+        else if((B < 255)&&(B >= 1)&&(R < 255)&&(R >= 1)&&((B <= R)||(R<=B))&&((B>=R-50)||(R>B-50))&&(G<10)){
+            grey = (255-(255/4)) - (((255-(255/4))-B)/4);
         }
         else if(((R <= 255)&&(R >= 220))&&((B <= 70))){
-            grey = (255 - (255/3)) - (G/3);
+            grey = (255/2) - (G/4);
         }
         else if(((G <= 255)&&(G >= 220))&&((B <= 70))){
-            grey = (255/3) - ((255-R)/3);
+            grey = (255/4) - ((255-R)/4);
         }
         else {
             grey = 255;
@@ -238,7 +240,7 @@ void bm_grayscale_conversion(FILE *file){
     fclose(bwclone);
 }
 
-void gaussian_blur(FILE * file){
+void gaussian_blur(FILE * file, char *gauss_copy){
     FILE *blur_clone;
     int offset, i, j=0, k, reso_h, reso_v, grey, siz;
     double gauss_kernel[3] = {0.06136, 0.24477, 0.38774};
@@ -248,7 +250,7 @@ void gaussian_blur(FILE * file){
     unsigned char * hor_pass;
     unsigned char * header;
 
-    blur_clone = fopen("gaussian.bmp", "wb");
+    blur_clone = fopen(gauss_copy, "wb");
     siz = bm_size(file);
     offset = bm_pix_offset(file);
     bm_resolution(file, &reso_v, &reso_h);
@@ -336,78 +338,72 @@ void gaussian_blur(FILE * file){
 
 void angle_to_rgb(double angle, unsigned char *B, unsigned char *G, unsigned char *R, unsigned char saturation){
     double rad_to_deg = 180.0/PI;
-    double ratio_sat, temp;
+    double ratio_sat, temp, pas = 250.0/60;
 
     angle = angle * rad_to_deg;
     saturation = 255 - saturation;
-
+    //printf("%f\t ori\t",angle);
     if (saturation < 1){
         *B=0;*G=0;*R=0;
     }
     else{
-        ratio_sat = 255/saturation;
-        if((angle < 0)&&(angle>-360)){
+        ratio_sat = saturation/255.0;
+        if((angle < 0)&&(angle>=-360)){
             angle = (360 + angle);
         }
-        else if(angle<-360){
-            angle = (abs(360+angle));
-        }
-        else if(angle > 360){
-            angle = angle - 360;
-        }
-
+        //printf("%f\n",angle);
         if((angle >= 0)&&(angle < 60)){
             *B = 0;
-            *R = 255-saturation;
-            temp = (angle*(255.0/60));
+            *R = 255-(255*ratio_sat);
+            temp = (angle*pas);
             *G = (unsigned char)(temp-(temp* ratio_sat));
         }
         else if((angle >= 60)&&(angle < 120)){
             *B = 0;
-            temp = (255 - ((angle-60)*(255.0/60)));
+            temp = (255 - ((angle-60)*pas));
             *R = (unsigned char)(temp-(temp * ratio_sat));
-            *G = 255 - saturation;
+            *G = 255 - (255*ratio_sat);
         }
         else if((angle >= 120)&&(angle < 180)){
-            temp = ((angle-120)*(255.0/60));
+            temp = ((angle-120)*pas);
             *B = (unsigned char)(temp-(temp * ratio_sat));
             *R = 0;
-            *G = 255 - saturation;
+            *G = 255 - (255*ratio_sat);
         }
         else if((angle >= 180)&&(angle < 240)){
-            *B = 255 - saturation;
+            *B = 255 - (255*ratio_sat);
             *R = 0;
-            temp = (255 - ((angle-180)*(255.0/60)));
+            temp = (255 - ((angle-180)*pas));
             *G = (unsigned char)(temp-(temp * ratio_sat));
         }
         else if((angle >= 240)&&(angle < 300)){
-            *B = 255 - saturation;
-            temp = ((angle-240)*(255.0/60));
+            *B = 255 - (255*ratio_sat);
+            temp = ((angle-240)*pas);
             *R = (unsigned char)(temp-(temp * ratio_sat));
             *G = 0;
         }
         else if((angle >= 300)&&(angle < 360)){
-            temp = (255 - ((angle-300)*(255.0/60)));
+            temp = (255 - ((angle-300)*pas));
             *B = (unsigned char)(temp-(temp * ratio_sat));
-            *R = 255 - saturation;
+            *R = 255 - (255*ratio_sat);
             *G = 0;
         }
     }
 }
-void sobel_filter(FILE * file){
-    FILE *sobel, *grad_angle;
-    int offset, i, j=0, reso_h, reso_v, pixel, siz, gx, gy;
-    short sobel_kernel[3][3] = {{-1, -2, -1},{0, 0, 0},{1, 2, 1}};
+void sobel_filter(FILE * file, char *grad, char *grad_dir){
+    FILE *sobel, *sobel_angle;
+    int offset, i, j=0, reso_h, reso_v, siz;
+    int sobel_kernel[2][3] = {{-1, -2, -1},{1, 2, 1}};
     unsigned char pixel_matrix[3][3] = {{0, 0, 0},{0, 0, 0},{0, 0, 0}};
     unsigned char * original;
     unsigned char * filter_pass;
     unsigned char * orientation_pass;
     unsigned char * header;
     unsigned char R = 0, G = 0, B = 0;
-    double angle;
+    double angle, pixel, gx, gy;
 
-    sobel = fopen("gradient.bmp", "wb");
-    grad_angle = fopen("gradient_angle.bmp", "wb");
+    sobel = fopen(grad, "wb");
+    sobel_angle = fopen(grad_dir, "wb");
     siz = bm_size(file);
     offset = bm_pix_offset(file);
     bm_resolution(file, &reso_v, &reso_h);
@@ -418,7 +414,7 @@ void sobel_filter(FILE * file){
     //copy and write header from original file in the new ones
     fread(header, 1, offset, file);
     fwrite(header, offset, 1, sobel);
-    fwrite(header, offset, 1, grad_angle);
+    fwrite(header, offset, 1, sobel_angle);
     free(header);
 
     original = (unsigned char *)malloc (sizeof(unsigned char)*(reso_h*reso_v));
@@ -462,10 +458,10 @@ void sobel_filter(FILE * file){
     for(i = 1; i < reso_v-1; i++){
         for(j = 1; j < reso_h-1; j++){
         //compute the gradient for the first file
-            gx = (pixel_matrix[2][0]*sobel_kernel[2][0])+(pixel_matrix[2][1]*sobel_kernel[2][1])+(pixel_matrix[2][2]*sobel_kernel[2][2])
+            gx = (pixel_matrix[2][0]*sobel_kernel[1][0])+(pixel_matrix[2][1]*sobel_kernel[1][1])+(pixel_matrix[2][2]*sobel_kernel[1][2])
                         +(pixel_matrix[0][0]*sobel_kernel[0][0]) + (pixel_matrix[0][1]*sobel_kernel[0][1])+(pixel_matrix[0][2]*sobel_kernel[0][2]);
             gy = (pixel_matrix[2][0]*sobel_kernel[0][0])+(pixel_matrix[1][0]*sobel_kernel[0][1])+pixel_matrix[0][0]*sobel_kernel[0][2]
-                        +(pixel_matrix[2][2]*sobel_kernel[2][0])+(pixel_matrix[1][2]*sobel_kernel[2][1])+(pixel_matrix[0][2]*sobel_kernel[2][2]);
+                        +(pixel_matrix[2][2]*sobel_kernel[1][0])+(pixel_matrix[1][2]*sobel_kernel[1][1])+(pixel_matrix[0][2]*sobel_kernel[1][2]);
             pixel = sqrt(pow(gx,2)+pow(gy,2));
             filter_pass[(i*reso_h)+j] = (unsigned char)pixel;
 
@@ -481,13 +477,9 @@ void sobel_filter(FILE * file){
             pixel_matrix[2][2] = original[(((i+1)*reso_h)+(j+2))];
 
             //compute the gradient direction for the second file
-            if(gx != 0){
-                angle = atan(gy/gx);
-                angle_to_rgb(angle, &B, &G, &R, (unsigned char)pixel);
-            }
-            else{
-                B=0;G=0;R=0;
-            }
+            angle = atan2(gy, gx);
+            angle_to_rgb(angle, &B, &G, &R, (unsigned char)pixel);
+
             orientation_pass[(i*(reso_h*3))+(j*3)] = B;
             orientation_pass[(i*(reso_h*3))+(j*3)+1] = G;
             orientation_pass[(i*(reso_h*3))+(j*3)+2] = R;
@@ -513,7 +505,7 @@ void sobel_filter(FILE * file){
         }
     }
 
-    fwrite(orientation_pass, siz-offset, 1, grad_angle);
+    fwrite(orientation_pass, siz-offset, 1, sobel_angle);
 
     for(i = 0; i < reso_h*reso_v; i++){
         for(j=0; j<3; j++){
@@ -523,4 +515,6 @@ void sobel_filter(FILE * file){
 
     free(filter_pass);
     free(orientation_pass);
+    fclose(sobel);
+    fclose(sobel_angle);
 }
