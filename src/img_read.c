@@ -3,19 +3,19 @@
 
 #define PI 3.14159265
 
-int IsEmpty(height_mat hm){
+int IsEmpty(path hm){
     return hm == NULL;
 }
 
-height_mat reste(height_mat hm){
+height_mat reste(path hm){
     return hm->succ;
 }
 
-int tete(height_mat hm){
-    return hm->h_value;
+int tete(path hm){
+    return hm->point;
 }
 
-void liberer(height_mat hm){
+void liberer(path hm){
     if(IsEmpty(hm) == 0){
         liberer(reste(hm));
         free(hm);
@@ -26,25 +26,19 @@ void liberer(height_mat hm){
     }
 }
 
-height_mat consvide(){
+path consvide(){
     return NULL;
 }
 
-height_mat add_height_val(height_mat hv, int val){
-    elev_mat * m;
-    m = (height_mat)malloc(sizeof(elev_mat));
-    m->h_value = val;
+path add_val(path hv, img_pt val){
+    pt * m;
+    m = (path)malloc(sizeof(pt));
+    m->pt.x = val.x;
+    m->pt.y = val.y;
     m->succ = hv;
     return m;
 }
 
-void lire(height_mat hm){
-    height_mat hmp = hm;
-    while(IsEmpty(hmp) != 1){
-        printf("%d\t",tete(hmp));
-        hmp = reste(hmp);
-    }
-}
 
 //returns the decimal value of a hexadecimal number coded on "nbytes" number of bytes
 int dec_hex_dec(FILE *file, int nbytes){
@@ -132,21 +126,13 @@ int bm_size(FILE *file){
 }
 
 
-//unfinished
-void bm_data_storage(FILE *file, int pix_offset){
-    height_mat pixdata = consvide();
-    fseek(file, pix_offset, SEEK_SET);
-    while(fgetc(file)!=EOF){
-        pixdata = add_height_val(pixdata, fgetc(file));
-    }
-}
-
 //takes two lines (one along the middle and one diagonal) of pixels of "file"
 // and checks if they are grayscale. If the chosen sample is grayscale the image
 //is considered grayscale as a matter of practicality
-int bm_grayscale_check(FILE *file){
+void bm_grayscale_check(FILE *file, int *graycheck, int *rgbcheck){
     int i, a, b, c, diag, med, h_reso, v_reso;
     bm_resolution(file, &v_reso, &h_reso);
+    *rgbcheck = 0;
     for(i = 1; i<=v_reso; i=i+2){
         fseek(file, (3*h_reso)+(i*3), SEEK_SET);
         a = fgetc(file);
@@ -157,6 +143,12 @@ int bm_grayscale_check(FILE *file){
         }
         else
             diag = 0;
+
+        if((a != 0) && (b != 0) && (c != 0)){
+            *rgbcheck = 0;
+        }
+        else
+            *rgbcheck = 1;
     }
     fseek(file, (v_reso/2)*(h_reso*3), SEEK_SET);
     for(i = 0; i <= (v_reso); i++){
@@ -168,9 +160,15 @@ int bm_grayscale_check(FILE *file){
         }
         else
             med = 0;
+
+        if((a != 0) && (b != 0) && (c != 0)){
+            *rgbcheck = 0;
+        }
+        else
+            *rgbcheck = 1;
     }
     rewind(file);
-    return ((diag==1)&&(med==1));
+    *graycheck = ((diag==1)&&(med==1));
 }
 
 int bm_access_data(height_mat matrix, int col, int line,  int reso){
@@ -191,8 +189,8 @@ int bm_access_data(height_mat matrix, int col, int line,  int reso){
 }
 
 //copy the header of "file" in unsigned char array "header" and copy it in a new file unchanged
-//copy the pixel data of "file" in unsigned char array "buffer" and proceed to convert BGR to grayscale
-void bm_grayscale_conversion(FILE *file, char *file_copy){
+//copy the pixel data of "file" in unsigned char array "buffer" and proceed to convert BGR to grayscale (conversion differ if the image is pur RGB or not)
+void bm_grayscale_conversion(FILE *file, char *file_copy, int pur_rgb){
     FILE *bwclone;
     int offset, siz, i, j;
     unsigned char * buffer;
@@ -208,31 +206,64 @@ void bm_grayscale_conversion(FILE *file, char *file_copy){
     fread(buffer, 1, siz, file);
     fwrite(header, offset, 1, bwclone);
     free(header);
-    for(i = 0; i < siz-2; i=i+3){
-        B = buffer[i];
-        G = buffer[i+1];
-        R = buffer[i+2];
-        if (((B==255)&&(G==255))&&(R==255)){
-            //if white keep white
-            grey = 255;
+    //if the image is not pure RGB --- I did my best to capture every nuances of color on the test image, I don't know how well it will translate on others
+    if(pur_rgb == 0){
+        for(i = 0; i < siz-2; i=i+3){
+            B = buffer[i];
+            G = buffer[i+1];
+            R = buffer[i+2];
+            if (((B==255)&&(G==255))&&(R==255)){
+                //if white keep white
+                grey = 255;
+            }
+            else if((B<=255)&&(B>=50)&&(R<=255)&&(R>=200)&&(G>=10)){
+                grey = (255-((255-G)/4));
+            }
+            else if((B < 255)&&(B >= 1)&&(R < 255)&&(R >= 1)&&((B <= R)||(R<=B))&&((B>=R-50)||(R>B-50))&&(G<10)){
+                grey = (255-(255/4)) - (((255-(255/4))-B)/4);
+            }
+            else if(((R <= 255)&&(R >= 220))&&((B <= 70))){
+                grey = (255/2) - (G/4);
+            }
+            else if(((G <= 255)&&(G >= 220))&&((B <= 70))){
+                grey = (255/4) - ((255-R)/4);
+            }
+            else {
+                grey = 255;
+            }
+            for(j = 1; j <= 3; j++){
+                putc(grey, bwclone);
+            }
         }
-        else if((B<=255)&&(B>=50)&&(R<=255)&&(R>=200)&&(G>=10)){
-            grey = (255-((255-G)/4));
-        }
-        else if((B < 255)&&(B >= 1)&&(R < 255)&&(R >= 1)&&((B <= R)||(R<=B))&&((B>=R-50)||(R>B-50))&&(G<10)){
-            grey = (255-(255/4)) - (((255-(255/4))-B)/4);
-        }
-        else if(((R <= 255)&&(R >= 220))&&((B <= 70))){
-            grey = (255/2) - (G/4);
-        }
-        else if(((G <= 255)&&(G >= 220))&&((B <= 70))){
-            grey = (255/4) - ((255-R)/4);
-        }
-        else {
-            grey = 255;
-        }
-        for(j = 1; j <= 3; j++){
-            putc(grey, bwclone);
+    }
+    //pure RGB --- I implemented a few tolerances in the conversion in those images as well
+    else{
+        for(i = 0; i < siz-2; i=i+3){
+            B = buffer[i];
+            G = buffer[i+1];
+            R = buffer[i+2];
+            if (((B==255)&&(G==255))&&(R==255)){
+                //if white keep white
+                grey = 255;
+            }
+            else if((B == 255)&&(R == 255)&&(G<255)){
+                grey = (255-((255-G)/4));
+            }
+            else if((R == 255)&&(G == 0)){
+                grey = (190) - (((255-(255/4))-B)/4);
+            }
+            else if(((R <= 255)&&(R >= 220))&&((B == 0))){
+                grey = (127) - (G/4);
+            }
+            else if((G <= 255)&&(G >= 220)&&(B  <= 20)){
+                grey = (64) - ((255-R)/4);
+            }
+            else {
+                grey = 255;
+            }
+            for(j = 1; j <= 3; j++){
+                putc(grey, bwclone);
+            }
         }
     }
     free(buffer);
@@ -517,4 +548,42 @@ void sobel_filter(FILE * file, char *grad, char *grad_dir){
     free(orientation_pass);
     fclose(sobel);
     fclose(sobel_angle);
+}
+
+void next_point(img_pt start, img_pt finish, img_pt *new_pt){
+    double dy, dx;
+    double slope;
+    dx = finish.x -  start.x;
+    dy = finish.y - start.y;
+
+    if(start.x == finish.x){
+        new_pt->x = start.x;
+        if(dy>0){
+            new_pt->y = start.y + 1;
+        }
+        else if(dy<0){
+            new_pt->y = start.y - 1;
+        }
+    }
+    else if(start.y == finish.y){
+        new_pt->y = start.y;
+        if(dx>0){
+            new_pt->x = start.x + 1;
+        }
+        else if(dx<0){
+            new_pt->x = start.x - 1;
+        }
+    }
+    else if((start.x == finish.x)&&(start.y == finish.y)){
+        new_pt->x = finish.x;
+        new_pt->y = finish.y;
+    }
+    else if(dx >= dy){
+        new_pt->x = start.x + 1;
+        new_pt->y = (int)(start.y + dy * (new_pt->x - start.x)/dx);
+    }
+    else if(dx < dy){
+        new_pt->y = start.y + 1;
+        new_pt->x = (int)(start.x + dx * (new_pt->y - start.y)/dy);
+    }
 }

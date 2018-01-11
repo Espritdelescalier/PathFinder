@@ -14,10 +14,12 @@ int main(int argc, char **argv){
     SDL_Window *fenetre = NULL;
     SDL_Renderer *renderer = NULL;
     SDL_Event ev;
+    img_pt start;
+    img_pt finish, next_pt;
     int continuer = 1;
     char file_name[120], filecopy_name[120], name_for_texture[120];
     int bitmap, reso_vert, reso_hor, pix_format, pix_offset, image_size, data_size;
-    int i;
+    int i, graycheck, rgbcheck;
     FILE *fp, *gauss_blur, *sobel;
 
     do{
@@ -64,7 +66,7 @@ int main(int argc, char **argv){
         //SDL2 to display the original image and take inputs
         //SDL2 variables
         int HEIGHT_SCREEN = (int)(WIDTH_SCREEN * (reso_vert/(double)reso_hor));//scale the window to the image
-        int mouse_click = 0, x_start, y_start, x_finish, y_finish;
+        int mouse_click = 0;
         double x_ratio, y_ratio;
 
         if(SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -85,9 +87,9 @@ int main(int argc, char **argv){
         SDL_Surface * image = SDL_LoadBMP(name_for_texture);
         SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, image);
         SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
 
         while((continuer)&&(mouse_click != 2)){
+            SDL_RenderPresent(renderer);
             while(SDL_PollEvent(&ev)){
                 switch(ev.type){
                     case SDL_QUIT:
@@ -95,11 +97,11 @@ int main(int argc, char **argv){
                         break;
                     case SDL_MOUSEBUTTONDOWN://two clicks to register coordinates
                         if(mouse_click == 0){
-                            SDL_GetMouseState(&x_start, &y_start);
+                            SDL_GetMouseState(&start.x, &start.y);
                             mouse_click++;
                         }
                         else{
-                            SDL_GetMouseState(&x_finish, &y_finish);
+                            SDL_GetMouseState(&finish.x, &finish.y);
                             mouse_click++;
                         }
                         break;
@@ -107,15 +109,20 @@ int main(int argc, char **argv){
             }
         }
 
-        //calculate ratio window resolution to image resolution and pixel position on image
-        x_ratio = (reso_hor/(double)WIDTH_SCREEN);
-        y_ratio = (reso_vert/(double)HEIGHT_SCREEN);
-        x_start = (int)(x_start * x_ratio);
-        y_start = (int)(y_start * y_ratio);
-        x_finish = (int)(x_finish * x_ratio);
-        y_finish = (int)(y_finish * y_ratio);
+        if(mouse_click == 2){
+            //calculate ratio window resolution to image resolution and pixel position on image if the window wasn't closed before
+            //the points were selected
+            x_ratio = (reso_hor/(double)WIDTH_SCREEN);
+            y_ratio = (reso_vert/(double)HEIGHT_SCREEN);
+            start.x = (int)(start.x * x_ratio);
+            start.y = (int)(reso_vert-(start.y * y_ratio));
+            finish.x = (int)(finish.x * x_ratio);
+            finish.y = (int)(reso_vert-(finish.y * y_ratio));
+            //printf("x1 %d; y1 %d; x2 %d; y2 %d",start.x, start.y, finish.x, finish.y);
+        }
 
-        if(bm_grayscale_check(fp) == 1){
+        bm_grayscale_check(fp, &graycheck, &rgbcheck);
+        if(graycheck == 1){
             printf("* Grayscale\n");
         }
         else{
@@ -125,7 +132,7 @@ int main(int argc, char **argv){
             strncat(file_name, "_grayscale.bmp",  sizeof("_grayscale.bmp"));
             i = strlen(file_name);
 
-            bm_grayscale_conversion(fp, file_name);
+            bm_grayscale_conversion(fp, file_name, rgbcheck);
         }
         fclose(fp);
 
@@ -148,6 +155,15 @@ int main(int argc, char **argv){
         i = strlen(file_name);
 
         sobel_filter(sobel, file_name, filecopy_name);
+
+
+
+        next_pt.x = start.x;
+        next_pt.y = start.y;
+        while(((next_pt.x != finish.x)&&(next_pt.y != finish.y))){
+            next_point(next_pt, finish, &next_pt);
+            printf("x: %d ; y: %d\n",next_pt.x, next_pt.y);
+        }
 
         fclose(sobel);
         fclose(gauss_blur);
