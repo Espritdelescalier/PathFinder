@@ -34,6 +34,7 @@ void gaussian_blur(FILE *, char*);
 void angle_to_rgb(double, unsigned char*, unsigned char*, unsigned char*, unsigned char);
 void sobel_filter(FILE * file, char *, char *);
 void next_point(img_pt, img_pt, img_pt *);
+path pathfinder(FILE *, FILE *, int, int, int, img_pt, img_pt, int);
 
 
 

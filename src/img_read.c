@@ -587,3 +587,46 @@ void next_point(img_pt start, img_pt finish, img_pt *new_pt){
         new_pt->x = (int)(start.x + dx * (new_pt->y - start.y)/dy);
     }
 }
+
+path pathfinder(FILE * gradient, FILE * grad_angle, int header_offset, int reso_h, int reso_v, img_pt start, img_pt fin, int threshold){
+    char * grad;
+    char * grad_orientation;
+    int x, y, slide;
+    img_pt next_pt, temp;
+    unsigned char gr_intensity;
+    unsigned char[3] gr_bgr;
+
+    fseek(gradient, header_offset, SEEK_SET);
+    fseek(grad_angle, header_offset, SEEK_SET);
+
+    grad = (unsigned char *)malloc (sizeof(unsigned char)*((reso_h*reso_v)*3));
+    grad_orientation = (unsigned char *)malloc (sizeof(unsigned char)*((reso_h*reso_v)*3));
+
+    fread(grad, 1, (reso_h*reso_v)*3, gradient);
+    fread(grad_orientation, 1, (reso_h*reso_v)*3, grad_angle);
+
+    threshold >= 255-16 ? slide = threshold : slide = threshold + 15);
+
+    next_pt.x = start.x;
+    next_pt.y = start.y;
+    while(((next_pt.x != fin.x)&&(next_pt.y != fin.y))){
+        temp.x = next_pt.x;
+        temp.y = next_pt.y;
+        next_point(next_pt, fin, &next_pt);
+        x = next_pt.x;
+        y = next_pt.y;
+        gr_intensity = grad[((y*reso_h)+(x-1)*3)];
+        gr_bgr[0] = grad[((y*reso_h)+(x-1)*3)];
+        gr_bgr[1] = grad[((y*reso_h)+(x-1)*3)+1];
+        gr_bgr[2] = grad[((y*reso_h)+(x-1)*3)+2];
+
+
+
+        //printf("x: %d ; y: %d\n",next_pt.x, next_pt.y);
+    }
+
+
+
+
+
+}
