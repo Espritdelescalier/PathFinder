@@ -7,11 +7,11 @@ int IsEmpty(path hm){
     return hm == NULL;
 }
 
-height_mat reste(path hm){
+path reste(path hm){
     return hm->succ;
 }
 
-int tete(path hm){
+img_pt tete(path hm){
     return hm->point;
 }
 
@@ -31,10 +31,10 @@ path consvide(){
 }
 
 path add_val(path hv, img_pt val){
-    pt * m;
-    m = (path)malloc(sizeof(pt));
-    m->pt.x = val.x;
-    m->pt.y = val.y;
+    imgpx *m;
+    m = (path)malloc(sizeof(imgpx));
+    m->point.x = val.x;
+    m->point.y = val.y;
     m->succ = hv;
     return m;
 }
@@ -171,7 +171,7 @@ void bm_grayscale_check(FILE *file, int *graycheck, int *rgbcheck){
     *graycheck = ((diag==1)&&(med==1));
 }
 
-int bm_access_data(height_mat matrix, int col, int line,  int reso){
+/*int bm_access_data(height_mat matrix, int col, int line,  int reso){
     int i, j;
     if (col <= reso){
         for(i = 0; i <= line-2; i++){
@@ -186,7 +186,7 @@ int bm_access_data(height_mat matrix, int col, int line,  int reso){
     }
     else
         return EXIT_FAILURE;
-}
+}*/
 
 //copy the header of "file" in unsigned char array "header" and copy it in a new file unchanged
 //copy the pixel data of "file" in unsigned char array "buffer" and proceed to convert BGR to grayscale (conversion differ if the image is pur RGB or not)
@@ -369,11 +369,10 @@ void gaussian_blur(FILE * file, char *gauss_copy){
 
 void angle_to_rgb(double angle, unsigned char *B, unsigned char *G, unsigned char *R, unsigned char saturation){
     double rad_to_deg = 180.0/PI;
-    double ratio_sat, temp, pas = 250.0/60;
+    double ratio_sat, temp /*,pas = 250.0/60 for visual esthetics */;
 
     angle = angle * rad_to_deg;
     saturation = 255 - saturation;
-    //printf("%f\t ori\t",angle);
     if (saturation < 1){
         *B=0;*G=0;*R=0;
     }
@@ -382,21 +381,20 @@ void angle_to_rgb(double angle, unsigned char *B, unsigned char *G, unsigned cha
         if((angle < 0)&&(angle>=-360)){
             angle = (360 + angle);
         }
-        //printf("%f\n",angle);
         if((angle >= 0)&&(angle < 60)){
             *B = 0;
             *R = 255-(255*ratio_sat);
-            temp = (angle*pas);
+            temp = (angle/*pas*/);
             *G = (unsigned char)(temp-(temp* ratio_sat));
         }
         else if((angle >= 60)&&(angle < 120)){
             *B = 0;
-            temp = (255 - ((angle-60)*pas));
+            temp = (255 - ((angle-60)/*pas*/));
             *R = (unsigned char)(temp-(temp * ratio_sat));
             *G = 255 - (255*ratio_sat);
         }
         else if((angle >= 120)&&(angle < 180)){
-            temp = ((angle-120)*pas);
+            temp = ((angle-120)/*pas*/);
             *B = (unsigned char)(temp-(temp * ratio_sat));
             *R = 0;
             *G = 255 - (255*ratio_sat);
@@ -404,17 +402,17 @@ void angle_to_rgb(double angle, unsigned char *B, unsigned char *G, unsigned cha
         else if((angle >= 180)&&(angle < 240)){
             *B = 255 - (255*ratio_sat);
             *R = 0;
-            temp = (255 - ((angle-180)*pas));
+            temp = (255 - ((angle-180)/*pas*/));
             *G = (unsigned char)(temp-(temp * ratio_sat));
         }
         else if((angle >= 240)&&(angle < 300)){
             *B = 255 - (255*ratio_sat);
-            temp = ((angle-240)*pas);
+            temp = ((angle-240)/*pas*/);
             *R = (unsigned char)(temp-(temp * ratio_sat));
             *G = 0;
         }
         else if((angle >= 300)&&(angle < 360)){
-            temp = (255 - ((angle-300)*pas));
+            temp = (255 - ((angle-300)/*pas*/));
             *B = (unsigned char)(temp-(temp * ratio_sat));
             *R = 255 - (255*ratio_sat);
             *G = 0;
@@ -616,9 +614,10 @@ path pathfinder(FILE * gradient, FILE * grad_angle, int header_offset, int reso_
         x = next_pt.x;
         y = next_pt.y;
         gr_intensity = grad[((y*reso_h)+(x-1)*3)];
-        gr_bgr[0] = grad[((y*reso_h)+(x-1)*3)];
-        gr_bgr[1] = grad[((y*reso_h)+(x-1)*3)+1];
-        gr_bgr[2] = grad[((y*reso_h)+(x-1)*3)+2];
+        gr_bgr[0] = grad[(((y-1)*reso_h)+(x-1)*3)];
+        gr_bgr[1] = grad[(((y-1)*reso_h)+(x-1)*3)+1];
+        gr_bgr[2] = grad[(((y-1)*reso_h)+(x-1)*3)+2];
+
 
 
 
@@ -629,4 +628,168 @@ path pathfinder(FILE * gradient, FILE * grad_angle, int header_offset, int reso_
 
 
 
+}
+
+int check_next_point(img_pt prev,img_pt point, int threshold, int grad, int gr_bgr[]){
+    int x, y, slide, dx, dy;
+    img_pt next_pt, temp;
+    unsigned char gr_intensity;
+    unsigned char[3] gr_bgr;
+
+    dx = point.x - prev.x;
+    dy = point.y - prev.y;
+
+
+    threshold >= 255-16 ? slide = threshold : slide = threshold + 15);
+
+    B = gr_bgr[0];
+    G = gr_bgr[1];
+    R = gr_bgr[2];
+
+    if((dx == 0) && (dy == 1)){
+        if((R > 0)&&(V > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else if((dx == 1) && (dy == 1)){
+        if(R > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else if((dx == 1) && (dy == 0)){
+        if(R > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else if((dx == 1) && (dy == -1)){
+        if((R > 0)&&(B > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else if((dx == 0) && (dy == -1)){
+        if(B > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else if((dx == -1) && (dy == 1)){
+        if((B > 0)&&(V > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else if((dx == -1) && (dy == 0)){
+        if(B > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else if((dx == -1) && (dy == 1)){
+        if(V > 0){
+            if(grad >= threshold){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+        else{
+            if(grad >= slide){
+                return 0;
+            }
+            else{
+                return 1;
+            }
+        }
+    }
+    else
+        return 0;
 }

@@ -55,7 +55,7 @@ Chaque nouveau fichier créé le sera dans le dossier source du fichier d'origin
 Chaque fichier est modifié en chargeant les données pixels dans un buffer d'unsigned char le filtre est alors appliqué et les données enregistrées dans un nouveau fichier, le buffer est ensuite libéré.
 Le programme determinera si la bitmap est grayscale, si non elle sera converti et un nouveau fichier sera créé
 Un flou gaussian sera alors appliqué pour supprimer le bruit, les données seront sauvegardés dans un nouveau fichier
-La prochaine étape est de calculer le gradient de l'image avec le filtre de sobel et ensuite son angle codé en RGB(une couleur par arc de 60 degrés un pas est présent (mais commenté) dans le code pour attribuer a chaque degré une couleur différente),
+La prochaine étape est de calculer le gradient de l'image avec le filtre de sobel et ensuite son angle codé en RGB(une couleur par arc de 60 degrés),
 les deux filtres seront appliqués et sauvegardés dans deux fichiers séparés.
 Un chemin sera alors calculé et stocké dans une liste chainée (chaque coordonnée des pixels à modifier) puis tracé sur l'image finale.
 Si aucun chemin n'est trouvé le programme s'arrêtera sans compléter la dernière étape.
