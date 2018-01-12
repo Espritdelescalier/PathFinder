@@ -10,12 +10,12 @@ damien.francois1@etu.univ-lorraine.fr
 ////////////
 
 Ce programme calculera, quand les informations requises seront entrées, un chemin entre deux points(les coordonnées sont entrées par l'utilisateur),
-et tracera alors ce chemin sur l'image(ou une copie de l'image originale)au travers du relief/de la topographie.
-En fonction des paramètre une partie de la carte sera inaccessible, le but étant de trouver un chemin sur la carte. 
+(ou une copie de l'image originale)au travers du relief/de la topographie.
+En fonction des paramètre une partie de la carte sera inaccessible. 
 
 This programme will, when the required informations are entered, calculate a path between two points (the coordinates are entered by the user),
- and then trace this path on the image (or a copy of the orignal image)through the relief/topography. 
-Depending on the parameters some of the map will be unaccessible the goal being to find a path on the map.
+(or a copy of the orignal image)through the relief/topography. 
+Depending on the parameters some of the map will be unaccessible .
  
 
 ///////////////
@@ -55,10 +55,9 @@ Chaque nouveau fichier créé le sera dans le dossier source du fichier d'origin
 Chaque fichier est modifié en chargeant les données pixels dans un buffer d'unsigned char le filtre est alors appliqué et les données enregistrées dans un nouveau fichier, le buffer est ensuite libéré.
 Le programme determinera si la bitmap est grayscale, si non elle sera converti et un nouveau fichier sera créé
 Un flou gaussian sera alors appliqué pour supprimer le bruit, les données seront sauvegardés dans un nouveau fichier
-La prochaine étape est de calculer le gradient de l'image avec le filtre de sobel et ensuite son angle codé en RGB(une couleur par arc de 60 degrés),
+La prochaine étape est de calculer le gradient de l'image avec le filtre de sobel et ensuite son angle codé en RGB(une couleur par arc de 60 degrés un pas est présent (mais commenté) dans le code pour attribuer a chaque degré une couleur différente),
 les deux filtres seront appliqués et sauvegardés dans deux fichiers séparés.
-Un chemin sera alors calculé et stocké dans une liste chainée (chaque coordonnée des pixels à modifier) puis tracé sur l'image finale.
-Si aucun chemin n'est trouvé le programme s'arrêtera sans compléter la dernière étape.
+
 
 
 Each new file created will be in the original file source folder.
@@ -66,8 +65,6 @@ Each file is modified by loading the pixel data in an unsigned char buffer and t
 The software will determine if the bitmap is grayscale, and if it is not convert it and create a new file
 Then it will apply a gaussian blur to the image to remove the noise, then save the data in a new file
 The next step is to compute the gradient of the image with the sobel filter and then the angle of the gradient coded in RGB (one color per 6O degres span), the two filters will be applied and saved each in a separate file.
-A path will then be calculated and stored in a linked list (each coordinates of the pixels to modify) and be traced on the final image.
-If no path is found the program will terminate without completing the final step.
 
 
 

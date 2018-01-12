@@ -3,42 +3,6 @@
 
 #define PI 3.14159265
 
-int IsEmpty(path hm){
-    return hm == NULL;
-}
-
-path reste(path hm){
-    return hm->succ;
-}
-
-img_pt tete(path hm){
-    return hm->point;
-}
-
-void liberer(path hm){
-    if(IsEmpty(hm) == 0){
-        liberer(reste(hm));
-        free(hm);
-    }
-    else{
-        //free(hm);
-        printf("\nListe libérée\n");
-    }
-}
-
-path consvide(){
-    return NULL;
-}
-
-path add_val(path hv, img_pt val){
-    imgpx *m;
-    m = (path)malloc(sizeof(imgpx));
-    m->point.x = val.x;
-    m->point.y = val.y;
-    m->succ = hv;
-    return m;
-}
-
 
 //returns the decimal value of a hexadecimal number coded on "nbytes" number of bytes
 int dec_hex_dec(FILE *file, int nbytes){
@@ -190,28 +154,25 @@ void bm_grayscale_check(FILE *file, int *graycheck, int *rgbcheck){
 
 //copy the header of "file" in unsigned char array "header" and copy it in a new file unchanged
 //copy the pixel data of "file" in unsigned char array "buffer" and proceed to convert BGR to grayscale (conversion differ if the image is pur RGB or not)
-void bm_grayscale_conversion(FILE *file, char *file_copy, int pur_rgb){
+void bm_grayscale_conversion(FILE *file, char *file_copy, int pur_rgb, file_t fichier){
     FILE *bwclone;
-    int offset, siz, i, j;
-    unsigned char * buffer;
-    unsigned char * header;
+    int siz, i, j;
     unsigned char B, G, R, grey;
-    offset = bm_pix_offset(file);
-    siz = bm_size(file)-offset;
+    siz = fichier.siz-fichier.offset;
     bwclone = fopen(file_copy, "wb");
-    buffer = (unsigned char *)malloc (sizeof(unsigned char)*siz);
-    header = (unsigned char *)malloc (sizeof(unsigned char)*offset);
+    fichier.buffer = (unsigned char *)malloc (sizeof(unsigned char)*siz);
+    fichier.header = (unsigned char *)malloc (sizeof(unsigned char)*fichier.offset);
 
-    fread(header, 1, offset, file);
-    fread(buffer, 1, siz, file);
-    fwrite(header, offset, 1, bwclone);
-    free(header);
+    fread(fichier.header, 1, fichier.offset, file);
+    fread(fichier.buffer, 1, siz, file);
+    fwrite(fichier.header, fichier.offset, 1, bwclone);
+    free(fichier.header);
     //if the image is not pure RGB --- I did my best to capture every nuances of color on the test image, I don't know how well it will translate on others
     if(pur_rgb == 0){
         for(i = 0; i < siz-2; i=i+3){
-            B = buffer[i];
-            G = buffer[i+1];
-            R = buffer[i+2];
+            B = fichier.buffer[i];
+            G = fichier.buffer[i+1];
+            R = fichier.buffer[i+2];
             if (((B==255)&&(G==255))&&(R==255)){
                 //if white keep white
                 grey = 255;
@@ -239,9 +200,9 @@ void bm_grayscale_conversion(FILE *file, char *file_copy, int pur_rgb){
     //pure RGB --- I implemented a few tolerances in the conversion in those images as well
     else{
         for(i = 0; i < siz-2; i=i+3){
-            B = buffer[i];
-            G = buffer[i+1];
-            R = buffer[i+2];
+            B = fichier.buffer[i];
+            G = fichier.buffer[i+1];
+            R = fichier.buffer[i+2];
             if (((B==255)&&(G==255))&&(R==255)){
                 //if white keep white
                 grey = 255;
@@ -266,7 +227,7 @@ void bm_grayscale_conversion(FILE *file, char *file_copy, int pur_rgb){
             }
         }
     }
-    free(buffer);
+    free(fichier.buffer);
     rewind(file);
     fclose(bwclone);
 }
@@ -419,54 +380,50 @@ void angle_to_rgb(double angle, unsigned char *B, unsigned char *G, unsigned cha
         }
     }
 }
-void sobel_filter(FILE * file, char *grad, char *grad_dir){
+void sobel_filter(FILE * file, char *grad, char *grad_dir, file_t fichier){
     FILE *sobel, *sobel_angle;
-    int offset, i, j=0, reso_h, reso_v, siz;
+    int i, j=0;
     int sobel_kernel[2][3] = {{-1, -2, -1},{1, 2, 1}};
     unsigned char pixel_matrix[3][3] = {{0, 0, 0},{0, 0, 0},{0, 0, 0}};
     unsigned char * original;
     unsigned char * filter_pass;
     unsigned char * orientation_pass;
-    unsigned char * header;
     unsigned char R = 0, G = 0, B = 0;
     double angle, pixel, gx, gy;
 
     sobel = fopen(grad, "wb");
     sobel_angle = fopen(grad_dir, "wb");
-    siz = bm_size(file);
-    offset = bm_pix_offset(file);
-    bm_resolution(file, &reso_v, &reso_h);
     rewind(file);
 
-    header = (unsigned char *)malloc (sizeof(unsigned char)*offset);
+    fichier.header = (unsigned char *)malloc (sizeof(unsigned char)*fichier.offset);
 
     //copy and write header from original file in the new ones
-    fread(header, 1, offset, file);
-    fwrite(header, offset, 1, sobel);
-    fwrite(header, offset, 1, sobel_angle);
-    free(header);
+    fread(fichier.header, 1, fichier.offset, file);
+    fwrite(fichier.header, fichier.offset, 1, sobel);
+    fwrite(fichier.header, fichier.offset, 1, sobel_angle);
+    free(fichier.header);
 
-    original = (unsigned char *)malloc (sizeof(unsigned char)*(reso_h*reso_v));
-    filter_pass = (unsigned char *)malloc (sizeof(unsigned char)*(reso_h*reso_v));
-    orientation_pass = (unsigned char *)malloc (sizeof(unsigned char)*((reso_h*reso_v)*3));
+    original = (unsigned char *)malloc (sizeof(unsigned char)*(fichier.reso_h*fichier.reso_v));
+    filter_pass = (unsigned char *)malloc (sizeof(unsigned char)*(fichier.reso_h*fichier.reso_v));
+    orientation_pass = (unsigned char *)malloc (sizeof(unsigned char)*((fichier.reso_h*fichier.reso_v)*3));
 
     //fill the first unsigned char buffer with pixels value to compute the horizontal pass
     //of the gaussian blur
-    for(i=offset; i<siz; i=i+3){
+    for(i=fichier.offset; i<fichier.siz; i=i+3){
         fseek(file, i+1, SEEK_SET);
         original[j] = getc(file);
         j++;
     }
 
     //fill the first line of the file in white so it's impossible to leave the image
-    for(i = 0; i<reso_h; i++){
+    for(i = 0; i<fichier.reso_h; i++){
         filter_pass[i] = 255;
         for(j=0; j<3; j++){
             orientation_pass[(i*3)+j] = 255;
         }
     }
     //fill the last line of the file in white so it's impossible to leave the image
-    for(i = ((reso_h*reso_v)-1)-reso_h; i<reso_h*reso_v; i++){
+    for(i = ((fichier.reso_h*fichier.reso_v)-1)-fichier.reso_h; i<fichier.reso_h*fichier.reso_v; i++){
         filter_pass[i] = 255;
         for(j=0; j<3; j++){
             orientation_pass[(i*3)+j] = 255;
@@ -477,66 +434,66 @@ void sobel_filter(FILE * file, char *grad, char *grad_dir){
     pixel_matrix[0][0] = original[0];
     pixel_matrix[1][0] = original[1];
     pixel_matrix[2][0] = original[2];
-    pixel_matrix[0][1] = original[reso_h];
-    pixel_matrix[1][1] = original[reso_h+1];
-    pixel_matrix[2][1] = original[reso_h+2];
-    pixel_matrix[0][2] = original[(2*reso_h)];
-    pixel_matrix[1][2] = original[(2*reso_h)+1];
-    pixel_matrix[2][2] = original[(2*reso_h)+2];
+    pixel_matrix[0][1] = original[fichier.reso_h];
+    pixel_matrix[1][1] = original[fichier.reso_h+1];
+    pixel_matrix[2][1] = original[fichier.reso_h+2];
+    pixel_matrix[0][2] = original[(2*fichier.reso_h)];
+    pixel_matrix[1][2] = original[(2*fichier.reso_h)+1];
+    pixel_matrix[2][2] = original[(2*fichier.reso_h)+2];
 
-    for(i = 1; i < reso_v-1; i++){
-        for(j = 1; j < reso_h-1; j++){
+    for(i = 1; i < fichier.reso_v-1; i++){
+        for(j = 1; j < fichier.reso_h-1; j++){
         //compute the gradient for the first file
             gx = (pixel_matrix[2][0]*sobel_kernel[1][0])+(pixel_matrix[2][1]*sobel_kernel[1][1])+(pixel_matrix[2][2]*sobel_kernel[1][2])
                         +(pixel_matrix[0][0]*sobel_kernel[0][0]) + (pixel_matrix[0][1]*sobel_kernel[0][1])+(pixel_matrix[0][2]*sobel_kernel[0][2]);
             gy = (pixel_matrix[2][0]*sobel_kernel[0][0])+(pixel_matrix[1][0]*sobel_kernel[0][1])+pixel_matrix[0][0]*sobel_kernel[0][2]
                         +(pixel_matrix[2][2]*sobel_kernel[1][0])+(pixel_matrix[1][2]*sobel_kernel[1][1])+(pixel_matrix[0][2]*sobel_kernel[1][2]);
             pixel = sqrt(pow(gx,2)+pow(gy,2));
-            filter_pass[(i*reso_h)+j] = (unsigned char)pixel;
+            filter_pass[(i*fichier.reso_h)+j] = (unsigned char)pixel;
 
             //move the pixel matrix one pixel further along the x axis
             pixel_matrix[0][0] = pixel_matrix[1][0];
             pixel_matrix[1][0] = pixel_matrix[2][0];
-            pixel_matrix[2][0] = original[(((i-1)*reso_h)+(j+2))];
+            pixel_matrix[2][0] = original[(((i-1)*fichier.reso_h)+(j+2))];
             pixel_matrix[0][1] = pixel_matrix[1][1];
             pixel_matrix[1][1] = pixel_matrix[2][1];
-            pixel_matrix[2][1] = original[((i*reso_h)+(j+2))];
+            pixel_matrix[2][1] = original[((i*fichier.reso_h)+(j+2))];
             pixel_matrix[0][2] = pixel_matrix[1][2];
             pixel_matrix[1][2] = pixel_matrix[2][2];
-            pixel_matrix[2][2] = original[(((i+1)*reso_h)+(j+2))];
+            pixel_matrix[2][2] = original[(((i+1)*fichier.reso_h)+(j+2))];
 
             //compute the gradient direction for the second file
             angle = atan2(gy, gx);
             angle_to_rgb(angle, &B, &G, &R, (unsigned char)pixel);
 
-            orientation_pass[(i*(reso_h*3))+(j*3)] = B;
-            orientation_pass[(i*(reso_h*3))+(j*3)+1] = G;
-            orientation_pass[(i*(reso_h*3))+(j*3)+2] = R;
+            orientation_pass[(i*(fichier.reso_h*3))+(j*3)] = B;
+            orientation_pass[(i*(fichier.reso_h*3))+(j*3)+1] = G;
+            orientation_pass[(i*(fichier.reso_h*3))+(j*3)+2] = R;
         }
 
         //move the pixel matrix one pixel further along the y axis
-        pixel_matrix[0][0] = original[(i)*reso_h];
-        pixel_matrix[1][0] = original[((i)*reso_h)+1];
-        pixel_matrix[2][0] = original[((i)*reso_h)+2];
-        pixel_matrix[0][1] = original[(i+1)*reso_h];
-        pixel_matrix[1][1] = original[((i+1)*reso_h)+1];
-        pixel_matrix[2][1] = original[((i+1)*reso_h)+2];
-        pixel_matrix[0][2] = original[((i+2)*reso_h)];
-        pixel_matrix[1][2] = original[((i+2)*reso_h)+1];
-        pixel_matrix[2][2] = original[((i+2)*reso_h)+2];
+        pixel_matrix[0][0] = original[(i)*fichier.reso_h];
+        pixel_matrix[1][0] = original[((i)*fichier.reso_h)+1];
+        pixel_matrix[2][0] = original[((i)*fichier.reso_h)+2];
+        pixel_matrix[0][1] = original[(i+1)*fichier.reso_h];
+        pixel_matrix[1][1] = original[((i+1)*fichier.reso_h)+1];
+        pixel_matrix[2][1] = original[((i+1)*fichier.reso_h)+2];
+        pixel_matrix[0][2] = original[((i+2)*fichier.reso_h)];
+        pixel_matrix[1][2] = original[((i+2)*fichier.reso_h)+1];
+        pixel_matrix[2][2] = original[((i+2)*fichier.reso_h)+2];
     }
     free(original);
 
     //fill the first and last row of the file in white
-    for(i = 0; i < reso_h; i = i+reso_h){
-        for(j = 0; j < reso_v; j++){
-            filter_pass[(j*reso_h)+i] = 255;
+    for(i = 0; i < fichier.reso_h; i = i+fichier.reso_h){
+        for(j = 0; j < fichier.reso_v; j++){
+            filter_pass[(j*fichier.reso_h)+i] = 255;
         }
     }
 
-    fwrite(orientation_pass, siz-offset, 1, sobel_angle);
+    fwrite(orientation_pass, fichier.siz-fichier.offset, 1, sobel_angle);
 
-    for(i = 0; i < reso_h*reso_v; i++){
+    for(i = 0; i < fichier.reso_h*fichier.reso_v; i++){
         for(j=0; j<3; j++){
             putc(filter_pass[i], sobel);
         }
@@ -548,248 +505,6 @@ void sobel_filter(FILE * file, char *grad, char *grad_dir){
     fclose(sobel_angle);
 }
 
-void next_point(img_pt start, img_pt finish, img_pt *new_pt){
-    double dy, dx;
-    double slope;
-    dx = finish.x -  start.x;
-    dy = finish.y - start.y;
-
-    if(start.x == finish.x){
-        new_pt->x = start.x;
-        if(dy>0){
-            new_pt->y = start.y + 1;
-        }
-        else if(dy<0){
-            new_pt->y = start.y - 1;
-        }
-    }
-    else if(start.y == finish.y){
-        new_pt->y = start.y;
-        if(dx>0){
-            new_pt->x = start.x + 1;
-        }
-        else if(dx<0){
-            new_pt->x = start.x - 1;
-        }
-    }
-    else if((start.x == finish.x)&&(start.y == finish.y)){
-        new_pt->x = finish.x;
-        new_pt->y = finish.y;
-    }
-    else if(dx >= dy){
-        new_pt->x = start.x + 1;
-        new_pt->y = (int)(start.y + dy * (new_pt->x - start.x)/dx);
-    }
-    else if(dx < dy){
-        new_pt->y = start.y + 1;
-        new_pt->x = (int)(start.x + dx * (new_pt->y - start.y)/dy);
-    }
-}
-
-path pathfinder(FILE * gradient, FILE * grad_angle, int header_offset, int reso_h, int reso_v, img_pt start, img_pt fin, int threshold){
-    char * grad;
-    char * grad_orientation;
-    int x, y, slide;
-    img_pt next_pt, temp;
-    unsigned char gr_intensity;
-    unsigned char[3] gr_bgr;
-
-    fseek(gradient, header_offset, SEEK_SET);
-    fseek(grad_angle, header_offset, SEEK_SET);
-
-    grad = (unsigned char *)malloc (sizeof(unsigned char)*((reso_h*reso_v)*3));
-    grad_orientation = (unsigned char *)malloc (sizeof(unsigned char)*((reso_h*reso_v)*3));
-
-    fread(grad, 1, (reso_h*reso_v)*3, gradient);
-    fread(grad_orientation, 1, (reso_h*reso_v)*3, grad_angle);
-
-    threshold >= 255-16 ? slide = threshold : slide = threshold + 15);
-
-    next_pt.x = start.x;
-    next_pt.y = start.y;
-    while(((next_pt.x != fin.x)&&(next_pt.y != fin.y))){
-        temp.x = next_pt.x;
-        temp.y = next_pt.y;
-        next_point(next_pt, fin, &next_pt);
-        x = next_pt.x;
-        y = next_pt.y;
-        gr_intensity = grad[((y*reso_h)+(x-1)*3)];
-        gr_bgr[0] = grad[(((y-1)*reso_h)+(x-1)*3)];
-        gr_bgr[1] = grad[(((y-1)*reso_h)+(x-1)*3)+1];
-        gr_bgr[2] = grad[(((y-1)*reso_h)+(x-1)*3)+2];
 
 
 
-
-        //printf("x: %d ; y: %d\n",next_pt.x, next_pt.y);
-    }
-
-
-
-
-
-}
-
-int check_next_point(img_pt prev,img_pt point, int threshold, int grad, int gr_bgr[]){
-    int x, y, slide, dx, dy;
-    img_pt next_pt, temp;
-    unsigned char gr_intensity;
-    unsigned char[3] gr_bgr;
-
-    dx = point.x - prev.x;
-    dy = point.y - prev.y;
-
-
-    threshold >= 255-16 ? slide = threshold : slide = threshold + 15);
-
-    B = gr_bgr[0];
-    G = gr_bgr[1];
-    R = gr_bgr[2];
-
-    if((dx == 0) && (dy == 1)){
-        if((R > 0)&&(V > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else if((dx == 1) && (dy == 1)){
-        if(R > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else if((dx == 1) && (dy == 0)){
-        if(R > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else if((dx == 1) && (dy == -1)){
-        if((R > 0)&&(B > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else if((dx == 0) && (dy == -1)){
-        if(B > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else if((dx == -1) && (dy == 1)){
-        if((B > 0)&&(V > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else if((dx == -1) && (dy == 0)){
-        if(B > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else if((dx == -1) && (dy == 1)){
-        if(V > 0){
-            if(grad >= threshold){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-        else{
-            if(grad >= slide){
-                return 0;
-            }
-            else{
-                return 1;
-            }
-        }
-    }
-    else
-        return 0;
-}

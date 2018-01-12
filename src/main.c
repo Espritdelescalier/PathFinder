@@ -15,10 +15,11 @@ int main(int argc, char **argv){
     SDL_Renderer *renderer = NULL;
     SDL_Event ev;
     img_pt start;
-    img_pt finish, next_pt;
+    img_pt finish;
     int continuer = 1;
+    file_t fichier;
     char file_name[120], filecopy_name[120], name_for_texture[120];
-    int bitmap, reso_vert, reso_hor, pix_format, pix_offset, image_size, data_size;
+    int bitmap, pix_format, data_size;
     int i, graycheck, rgbcheck;
     FILE *fp, *gauss_blur, *sobel;
 
@@ -43,20 +44,20 @@ int main(int argc, char **argv){
     if(bitmap == 1){
         printf("Le fichier est bien un fichier bitmap\n");
 
-        bm_resolution(fp, &reso_vert, &reso_hor);
-        printf("* Résolution horizontale: %d pixels\n",reso_hor);
-        printf("* Résolution verticale: %d pixels\n",reso_vert);
+        bm_resolution(fp, &fichier.reso_v, &fichier.reso_h);
+        printf("* Résolution horizontale: %d pixels\n",fichier.reso_h);
+        printf("* Résolution verticale: %d pixels\n",fichier.reso_v);
 
         pix_format = bm_pix_format(fp);
         printf("* Pixels codés sur %d bits\n", pix_format);
 
-        pix_offset = bm_pix_offset(fp);
-        printf("* Données pixels après le %dème octet\n",pix_offset);
+        fichier.offset = bm_pix_offset(fp);
+        printf("* Données pixels après le %dème octet\n",fichier.offset);
 
-        image_size = bm_size(fp);
-        printf("* L'image pèse %d octets\n", image_size);
+        fichier.siz = bm_size(fp);
+        printf("* L'image pèse %d octets\n", fichier.siz);
 
-        data_size = image_size-pix_offset;
+        data_size = fichier.siz-fichier.offset;
         printf("* Les données pixel padding inclus pèsent %d octets\n", data_size);
         if(pix_format != 24){
             printf("Format pixel non supporté\n");
@@ -65,7 +66,7 @@ int main(int argc, char **argv){
 
         //SDL2 to display the original image and take inputs
         //SDL2 variables
-        int HEIGHT_SCREEN = (int)(WIDTH_SCREEN * (reso_vert/(double)reso_hor));//scale the window to the image
+        int HEIGHT_SCREEN = (int)(WIDTH_SCREEN * (fichier.reso_v/(double)fichier.reso_h));//scale the window to the image
         int mouse_click = 0;
         double x_ratio, y_ratio;
 
@@ -112,12 +113,12 @@ int main(int argc, char **argv){
         if(mouse_click == 2){
             //calculate ratio window resolution to image resolution and pixel position on image if the window wasn't closed before
             //the points were selected
-            x_ratio = (reso_hor/(double)WIDTH_SCREEN);
-            y_ratio = (reso_vert/(double)HEIGHT_SCREEN);
+            x_ratio = (fichier.reso_h/(double)WIDTH_SCREEN);
+            y_ratio = (fichier.reso_v/(double)HEIGHT_SCREEN);
             start.x = (int)(start.x * x_ratio);
-            start.y = (int)(reso_vert-(start.y * y_ratio));
+            start.y = (int)(fichier.reso_v-(start.y * y_ratio));
             finish.x = (int)(finish.x * x_ratio);
-            finish.y = (int)(reso_vert-(finish.y * y_ratio));
+            finish.y = (int)(fichier.reso_v-(finish.y * y_ratio));
             //printf("x1 %d; y1 %d; x2 %d; y2 %d",start.x, start.y, finish.x, finish.y);
         }
 
@@ -132,7 +133,7 @@ int main(int argc, char **argv){
             strncat(file_name, "_grayscale.bmp",  sizeof("_grayscale.bmp"));
             i = strlen(file_name);
 
-            bm_grayscale_conversion(fp, file_name, rgbcheck);
+            bm_grayscale_conversion(fp, file_name, rgbcheck, fichier);
         }
         fclose(fp);
 
@@ -155,15 +156,6 @@ int main(int argc, char **argv){
         i = strlen(file_name);
 
         sobel_filter(sobel, file_name, filecopy_name);
-
-
-
-        next_pt.x = start.x;
-        next_pt.y = start.y;
-        while(((next_pt.x != finish.x)&&(next_pt.y != finish.y))){
-            next_point(next_pt, finish, &next_pt);
-            printf("x: %d ; y: %d\n",next_pt.x, next_pt.y);
-        }
 
         fclose(sobel);
         fclose(gauss_blur);
